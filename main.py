@@ -1,6 +1,6 @@
 import asyncio
 from aiogram import Bot, Dispatcher
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, InputFile
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
 from aiogram.filters import Command
 
 # Токен вашего бота
@@ -67,6 +67,8 @@ quiz_data = [
 # Словарь для хранения состояния пользователей
 user_states = {}
 
+logo = FSInputFile('media/logo.jpg')
+
 
 # Обработчик команды /start
 @dp.message(Command('start'))
@@ -75,8 +77,12 @@ async def start_command(message: Message):
         [InlineKeyboardButton(text = "Начать викторину 🧠", callback_data = "start_quiz")],
         [InlineKeyboardButton(text = "О зоопарке 🐾", callback_data = "about_zoo")],
     ])
-    await message.answer(
-        "Привет! Это телеграм Московского Зоопарка. 🐾 Выберите действие:",
+
+    # Отправляем логотип
+    await bot.send_photo(
+        chat_id = message.chat.id,
+        photo = logo,
+        caption = "Добро пожаловать в Московский зоопарк! Это телеграм Московского Зоопарка. 🐾 Выберите действие:",
         reply_markup = keyboard
     )
 
@@ -148,7 +154,7 @@ async def handle_quiz_answer(callback: CallbackQuery):
 
         await bot.send_photo(
             chat_id = user_id,
-            photo = InputFile(animal_images[total_animal]),
+            photo = FSInputFile(animal_images[total_animal]),
             caption = f"Поздравляю! {total_animal} — ваше тотемное животное!"
         )
 
@@ -156,7 +162,6 @@ async def handle_quiz_answer(callback: CallbackQuery):
         del user_states[user_id]
 
     await callback.answer()
-
 
 
 # Основная функция для запуска бота
