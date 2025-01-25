@@ -1,13 +1,13 @@
 import asyncio
 from aiogram import Bot, Dispatcher
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, InputFile
 from aiogram.filters import Command
 
 # Токен вашего бота
 TOKEN = '7408912366:AAGb0eztKX1Ez-BWZ-cm751SclPgKZpn6Go'
 
 # Создаем экземпляры бота и диспетчера
-bot = Bot(token=TOKEN)
+bot = Bot(token = TOKEN)
 dp = Dispatcher()
 
 # Вопросы для викторины
@@ -22,11 +22,51 @@ quiz_data = [
             "В городской суете": "Крыса"
         }
     },
-    # Другие вопросы
+    {
+        "question": "Какую еду вы предпочитаете?",
+        "options": ["Мясо", "Овощи", "Рыба", "Сладости"],
+        "mapping": {
+            "Мясо": "Лев",
+            "Овощи": "Рысь",
+            "Рыба": "Фламинго",
+            "Сладости": "Крыса"
+        }
+    },
+    {
+        "question": "Какой ваш любимый цвет?",
+        "options": ["Красный", "Синий", "Зеленый", "Желтый"],
+        "mapping": {
+            "Красный": "Лев",
+            "Синий": "Белый медведь",
+            "Зеленый": "Лев",
+            "Желтый": "Фламинго"
+        }
+    },
+    {
+        "question": "Какой ваш любимый стиль жизни?",
+        "options": ["Активный", "Спокойный", "Природный", "Городской"],
+        "mapping": {
+            "Активный": "Лев",
+            "Спокойный": "Рысь",
+            "Природный": "Фламинго",
+            "Городской": "Крыса"
+        }
+    },
+    {
+        "question": "Как вы относитесь к одиночеству?",
+        "options": ["Люблю одиночество", "Не могу без компании", "Мне все равно", "Зависит от ситуации"],
+        "mapping": {
+            "Люблю одиночество": "Белый медведь",
+            "Не могу без компании": "Крыса",
+            "Мне все равно": "Лев",
+            "Зависит от ситуации": "Фламинго"
+        }
+    },
 ]
 
 # Словарь для хранения состояния пользователей
 user_states = {}
+
 
 # Обработчик команды /start
 @dp.message(Command('start'))
@@ -89,7 +129,7 @@ async def handle_quiz_answer(callback: CallbackQuery):
     if state["current_question"] < len(quiz_data):
         await send_question(user_id)
     else:
-        # Определяем тотемное животное
+        # Подсчитываем ответы и определяем тотемное животное
         animal_scores = {}
         for i, answer in enumerate(state["answers"]):
             mapping = quiz_data[i]["mapping"]
@@ -99,26 +139,31 @@ async def handle_quiz_answer(callback: CallbackQuery):
         total_animal = max(animal_scores, key = animal_scores.get)
 
         animal_images = {
-            "Лев": "https://storage.moscowzoo.ru/storage/647edc2a70bb5462366280fc/images/animals/fc387a69-37f8-4bbb-af2e-432a1a7a1640.jpeg",
-            # Другие изображения
+            "Лев": "media/lion.png",
+            "Фламинго": "media/flamingo.png",
+            "Белый медведь": "media/bear.png",
+            "Рысь": "media/Ris.png",
+            "Крыса": "media/rat.png",
         }
 
-        await callback.message.answer(f"Ваш тотем: {total_animal} 🐾")
         await bot.send_photo(
             chat_id = user_id,
-            photo = animal_images[total_animal],
+            photo = InputFile(animal_images[total_animal]),
             caption = f"Поздравляю! {total_animal} — ваше тотемное животное!"
         )
 
-        del user_states[user_id]  # Удаляем состояние пользователя
+        # Удаляем состояние пользователя после завершения викторины
+        del user_states[user_id]
 
     await callback.answer()
+
 
 
 # Основная функция для запуска бота
 async def main():
     print("Бот запущен...")
     await dp.start_polling(bot)
+
 
 if __name__ == '__main__':
     asyncio.run(main())
