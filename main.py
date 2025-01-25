@@ -7,7 +7,7 @@ from aiogram.filters import Command
 TOKEN = '7408912366:AAGb0eztKX1Ez-BWZ-cm751SclPgKZpn6Go'
 
 # Создаем экземпляры бота и диспетчера
-bot = Bot(token = TOKEN)
+bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 # Вопросы для викторины
@@ -64,43 +64,51 @@ quiz_data = [
     },
 ]
 
-# Словарь для хранения состояния пользователей
+# Словарь для хранения состояния пользователей и отзывов
 user_states = {}
+feedbacks = {}
 
 logo = FSInputFile('media/logo.jpg')
-
 
 # Обработчик команды /start
 @dp.message(Command('start'))
 async def start_command(message: Message):
-    keyboard = InlineKeyboardMarkup(inline_keyboard = [
-        [InlineKeyboardButton(text = "Начать викторину 🧠", callback_data = "start_quiz")],
-        [InlineKeyboardButton(text = "О зоопарке 🐾", callback_data = "about_zoo")],
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="Начать викторину 🧠", callback_data="start_quiz")],
+        [InlineKeyboardButton(text="О зоопарке 🐾", callback_data="about_zoo")],
+        [InlineKeyboardButton(text="Контакты 📞", callback_data="contact_info")],
+        [InlineKeyboardButton(text="Оставить отзыв ✍️", callback_data="give_feedback")],
     ])
 
     # Отправляем логотип
     await bot.send_photo(
-        chat_id = message.chat.id,
-        photo = logo,
-        caption = "Добро пожаловать в Московский зоопарк! Это телеграм Московского Зоопарка. 🐾 Выберите действие:",
-        reply_markup = keyboard
+        chat_id=message.chat.id,
+        photo=logo,
+        caption="Добро пожаловать в Московский зоопарк! Это телеграм Московского Зоопарка. 🐾 Выберите действие:",
+        reply_markup=keyboard
     )
-
 
 # Обработчик кнопки "О зоопарке"
 @dp.callback_query(lambda c: c.data == "about_zoo")
 async def about_zoo(callback: CallbackQuery):
     text = (
         "Московский зоопарк — один из старейших зоопарков Европы. Он был открыт 31 января 1864 года по старому стилю и назывался тогда зоосадом.\n\n"
-        "Московский зоопарк был организован Императорским русским обществом акклиматизации животных и растений.\n\n"
-        "Начало его существования связано с замечательными именами профессоров Московского Университета Карла Францевича Рулье, Анатолия Петровича Богданова и Сергея Алексеевича Усова.\n\n"
-        "Местность, где теперь находится Старая территория зоопарка, называлась «Пресненские пруды». Здесь протекала довольно широкая река Пресня, и было одно из любимых мест гуляний москвичей — зелёные холмы, заливные луга, цветущие сады украшали окрестности.\n\n"
-        "Для создания зоосада большинством голосов членов Общества акклиматизации был выбран именно этот участок, так как он находился на доступном расстоянии для всех москвичей, в том числе и небогатых. Территория Петровской академии, например, была удобнее и больше, но ездить туда было бы далеко и дорого для большинства потенциальных посетителей.\n\n"
         "Подробнее: [Московский зоопарк](https://moscowzoo.ru/about)"
     )
-    await callback.message.answer(text, disable_web_page_preview = True)
+    await callback.message.answer(text, disable_web_page_preview=True)
     await callback.answer()
 
+# Обработчик кнопки "Контакты"
+@dp.callback_query(lambda c: c.data == "contact_info")
+async def contact_info(callback: CallbackQuery):
+    text = (
+        "Контакты Московского зоопарка:\n\n"
+        "📍 Адрес: Москва, ул. Б. Грузинская, 1\n"
+        "📞 Телефон: +7 (499) 252-29-51\n"
+        "🌐 Сайт: [moscowzoo.ru](https://moscowzoo.ru)"
+    )
+    await callback.message.answer(text, disable_web_page_preview=True)
+    await callback.answer()
 
 # Обработчик кнопки "Начать викторину"
 @dp.callback_query(lambda c: c.data == "start_quiz")
@@ -108,23 +116,21 @@ async def start_quiz(callback: CallbackQuery):
     user_states[callback.from_user.id] = {"current_question": 0, "answers": []}
     await send_question(callback.from_user.id)
 
-
 # Функция для отправки следующего вопроса
 async def send_question(user_id):
     state = user_states[user_id]
     question_data = quiz_data[state["current_question"]]
     keyboard = InlineKeyboardMarkup(
-        inline_keyboard = [
-            [InlineKeyboardButton(text = option, callback_data = f"quiz_option:{option}")]
+        inline_keyboard=[
+            [InlineKeyboardButton(text=option, callback_data=f"quiz_option:{option}")]
             for option in question_data["options"]
         ]
     )
     await bot.send_message(
-        chat_id = user_id,
-        text = f"Вопрос {state['current_question'] + 1}: {question_data['question']}",
-        reply_markup = keyboard
+        chat_id=user_id,
+        text=f"Вопрос {state['current_question'] + 1}: {question_data['question']}",
+        reply_markup=keyboard
     )
-
 
 # Обработчик ответа на вопрос
 @dp.callback_query(lambda c: c.data.startswith("quiz_option:"))
@@ -149,7 +155,7 @@ async def handle_quiz_answer(callback: CallbackQuery):
             animal = mapping[answer]
             animal_scores[animal] = animal_scores.get(animal, 0) + 1
 
-        total_animal = max(animal_scores, key = animal_scores.get)
+        total_animal = max(animal_scores, key=animal_scores.get)
 
         animal_images = {
             "Лев": "media/lion.png",
@@ -160,9 +166,19 @@ async def handle_quiz_answer(callback: CallbackQuery):
         }
 
         await bot.send_photo(
-            chat_id = user_id,
-            photo = FSInputFile(animal_images[total_animal]),
-            caption = f"Поздравляю! {total_animal} — ваше тотемное животное!"
+            chat_id=user_id,
+            photo=FSInputFile(animal_images[total_animal]),
+            caption=f"Поздравляю! {total_animal} — ваше тотемное животное!"
+        )
+
+        # Предлагаем перезапуск викторины
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="Пройти снова 🔄", callback_data="start_quiz")]
+        ])
+        await bot.send_message(
+            chat_id=user_id,
+            text="Хотите пройти викторину снова?",
+            reply_markup=keyboard
         )
 
         # Удаляем состояние пользователя после завершения викторины
@@ -170,12 +186,27 @@ async def handle_quiz_answer(callback: CallbackQuery):
 
     await callback.answer()
 
+# Обработчик кнопки "Оставить отзыв"
+@dp.callback_query(lambda c: c.data == "give_feedback")
+async def give_feedback(callback: CallbackQuery):
+    await callback.message.answer("Пожалуйста, напишите ваш отзыв одним сообщением:")
+    feedbacks[callback.from_user.id] = True
+    await callback.answer()
+
+# Обработчик текстовых сообщений для отзывов
+@dp.message()
+async def collect_feedback(message: Message):
+    if feedbacks.get(message.from_user.id):
+        # Сохраняем отзыв
+        with open("feedbacks.txt", "a", encoding="utf-8") as file:
+            file.write(f"{message.from_user.id}: {message.text}\n")
+        await message.answer("Спасибо за ваш отзыв! 🙏")
+        feedbacks[message.from_user.id] = False
 
 # Основная функция для запуска бота
 async def main():
     print("Бот запущен...")
     await dp.start_polling(bot)
-
 
 if __name__ == '__main__':
     asyncio.run(main())
